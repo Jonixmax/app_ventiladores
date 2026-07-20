@@ -48,7 +48,6 @@ class DatabaseHelper {
 
   insert(Map row) async {
     Database db = await instance.database;
-    // Truco: Transformamos el mapa para evitar errores de tipo sin usar los símbolos
     var filaSegura = { for (var e in row.entries) e.key.toString(): e.value };
     return await db.insert(table, filaSegura);
   }
@@ -56,6 +55,14 @@ class DatabaseHelper {
   queryAllRows() async {
     Database db = await instance.database;
     return await db.query(table);
+  }
+
+  // --- NUEVA FUNCIÓN PARA EDITAR ---
+  update(Map row) async {
+    Database db = await instance.database;
+    int id = row['id'];
+    var filaSegura = { for (var e in row.entries) e.key.toString(): e.value };
+    return await db.update(table, filaSegura, where: '$columnId = ?', whereArgs: [id]);
   }
 
   delete(int id) async {
