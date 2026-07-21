@@ -40,7 +40,7 @@ class DatabaseHelper {
       ''');
     
     await db.insert(table, {
-      columnNombre: 'Administrador Principal',
+      columnNombre: 'kiro',
       columnRol: 'admin',
       columnPin: '1234'
     });
