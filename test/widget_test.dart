@@ -1,30 +1,19 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
+// Smoke test: verifica que la app arranca y muestra la pantalla Splash
+// sin lanzar excepciones.
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:app_ventiladores/main.dart';
+import 'package:app_ventiladores/app.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('La app arranca y muestra el splash de KITHER', (WidgetTester tester) async {
+    await tester.pumpWidget(const MiAppIot());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('KITHER'), findsOneWidget);
+    expect(find.text('VENTILACIÓN INTELIGENTE'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // El splash espera 3s antes de navegar al Login. Avanzamos el reloj de
+    // pruebas ese tiempo para que el Timer no quede "pendiente" al terminar
+    // el test (si no, flutter_test lo marca como fuga y falla el test).
+    await tester.pump(const Duration(seconds: 4));
   });
 }
