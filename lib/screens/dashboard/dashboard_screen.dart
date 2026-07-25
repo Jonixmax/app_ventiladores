@@ -87,10 +87,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _enviarComando(String comando) => _bluetoothService.enviarComando(comando);
 
   void _iniciarTemporizador(int minutos) {
-    _timerCuentaRegresiva?.cancel(); // Cancela cualquier temporizador anterior
+    _timerCuentaRegresiva?.cancel(); 
 
     if (minutos == 0) {
-      setState(() { _tiempoSeleccionado = ''; _segundosRestantes = 0; });
+      // CANCELACIÓN MANUAL: Solo borramos el tiempo visual, respetando la configuración actual
+      setState(() { 
+        _tiempoSeleccionado = ''; 
+        _segundosRestantes = 0; 
+      });
       _enviarComando("TIME:0");
       return;
     }
@@ -107,18 +111,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _tiempoSeleccionado = '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
         });
       } else {
+        // FIN NATURAL DEL TIEMPO (Llegó a 0)
         timer.cancel();
 
-        if (_modoAuto) {
-          _enviarComando("AUTO:0:$_tempMin:$_tempMax");
-        }
-
-        for (int i = 0; i < _velocidadVentiladores.length; i++) {
-          if (_velocidadVentiladores[i] > 0) {
-            _enviarComando("V${i + 1}:0");
-          }
-        }
-
+        // El ESP32 ya tiene su propia cuenta regresiva y cortará la energía físicamente.
+        // Flutter SOLO limpia la interfaz gráfica visual para no saturar el Bluetooth.
         setState(() {
           _tiempoSeleccionado = '';
           _modoAuto = false;
@@ -166,8 +163,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
       modoAuto: _modoAuto,
       velocidadAuto: _velocidadAuto,
       onGuardar: (tempBaja, tempAlta, autoActivado, velAuto) {
-        setState(() { _tempMin = tempBaja; _tempMax = tempAlta; _modoAuto = autoActivado; _velocidadAuto = velAuto; });
+        setState(() {
+          _tempMin = tempBaja;
+          _tempMax = tempAlta;
+          _modoAuto = autoActivado;
+          _velocidadAuto = velAuto;
+                        
+          // Si desactivamos el switch, reseteamos visualmente los sliders
+          if (!autoActivado) {
+            _velocidadVentiladores = [0.0, 0.0, 0.0, 0.0, 0.0];
+          }
+        });
+                      
+        // Enviamos el comando para activar/desactivar el modo automático en el ESP32.
         _enviarComando("AUTO:${autoActivado ? '1' : '0'}:$tempBaja:$tempAlta:$_velocidadAuto");
+
+        // Si se está desactivando el modo auto, enviamos un comando explícito para apagar cada ventilador.
+        if (!autoActivado) {
+          for (int i = 1; i <= 5; i++) {
+            _enviarComando("V$i:0");
+          }
+        }
+                      
+        // Usamos rootNavigator en true para obligar a Flutter a cerrar
+        // EXCLUSIVAMENTE el Dialog que está en primer plano y proteger tu Dashboard.
+        Navigator.of(context, rootNavigator: true).pop();
       },
     );
   }

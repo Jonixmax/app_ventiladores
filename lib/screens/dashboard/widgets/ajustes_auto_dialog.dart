@@ -107,7 +107,6 @@ void mostrarAjustesAuto(
                   ),
                   onPressed: () {
                     onGuardar(tempBaja, tempAlta, autoActivado, velAuto);
-                    Navigator.pop(context);
                   },
                   child: const Text('Guardar', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
