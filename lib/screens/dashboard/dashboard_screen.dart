@@ -87,20 +87,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _enviarComando(String comando) => _bluetoothService.enviarComando(comando);
 
   void _iniciarTemporizador(int minutos) {
-    _timerCuentaRegresiva?.cancel(); 
+    _timerCuentaRegresiva?.cancel();
 
     if (minutos == 0) {
       // CANCELACIÓN MANUAL: Solo borramos el tiempo visual, respetando la configuración actual
-      setState(() { 
-        _tiempoSeleccionado = ''; 
-        _segundosRestantes = 0; 
+      setState(() {
+        _tiempoSeleccionado = '';
+        _segundosRestantes = 0;
       });
       _enviarComando("TIME:0");
       return;
     }
 
+    // Si se inicia un temporizador, el modo auto se debe desactivar para evitar conflictos.
+    if (_modoAuto) {
+      // Guardamos si los ventiladores estaban encendidos (según la temperatura)
+      // para poder mantener su estado después de cambiar de modo.
+      final bool ventiladoresEstabanEncendidos = _temperaturaActual >= _tempMax;
+      final int velocidadPrevia = _velocidadAuto;
+
+      setState(() {
+        _modoAuto = false;
+        // Actualizamos el estado local de las velocidades para la UI de "Gestionar Ventiladores".
+        if (ventiladoresEstabanEncendidos) {
+          _velocidadVentiladores = List.filled(5, velocidadPrevia.toDouble());
+        }
+      });
+
+      // Enviamos el comando de tiempo. El firmware desactivará el modo auto
+      // y probablemente apagará los ventiladores como efecto secundario.
+      _enviarComando("TIME:$minutos");
+
+      // Para contrarrestar el apagado, si los ventiladores estaban encendidos,
+      // los volvemos a encender explícitamente a su velocidad anterior.
+      if (ventiladoresEstabanEncendidos) {
+        for (int i = 1; i <= 5; i++) {
+          _enviarComando("V$i:$velocidadPrevia");
+        }
+      }
+    } else {
+      // Si el modo auto no estaba activo, simplemente iniciamos el temporizador.
+      _enviarComando("TIME:$minutos");
+    }
+
     setState(() { _segundosRestantes = minutos * 60; });
-    _enviarComando("TIME:$minutos");
 
     _timerCuentaRegresiva = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_segundosRestantes > 0) {
@@ -111,16 +141,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _tiempoSeleccionado = '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
         });
       } else {
-        // FIN NATURAL DEL TIEMPO (Llegó a 0)
         timer.cancel();
-
-        // El ESP32 ya tiene su propia cuenta regresiva y cortará la energía físicamente.
-        // Flutter SOLO limpia la interfaz gráfica visual para no saturar el Bluetooth.
-        setState(() {
-          _tiempoSeleccionado = '';
-          _modoAuto = false;
-          _velocidadVentiladores = [0.0, 0.0, 0.0, 0.0, 0.0];
-        });
+        // Cuando el temporizador llega a 0, apagamos explícitamente los ventiladores
+        // para asegurar que se detengan, ya que el firmware podría no hacerlo
+        // si se enviaron comandos manuales después de iniciar el timer.
+        for (int i = 1; i <= 5; i++) {
+          _enviarComando("V$i:0");
+        }
+        setState(() { _tiempoSeleccionado = ''; _velocidadVentiladores = [0.0, 0.0, 0.0, 0.0, 0.0]; });
       }
     });
   }
@@ -163,6 +191,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       modoAuto: _modoAuto,
       velocidadAuto: _velocidadAuto,
       onGuardar: (tempBaja, tempAlta, autoActivado, velAuto) {
+        final bool modoAutoEstabaActivo = _modoAuto;
+
+        // Si se activa el modo auto, se desactiva cualquier temporizador para evitar conflictos.
+        if (autoActivado) {
+          _iniciarTemporizador(0);
+        }
+
         setState(() {
           _tempMin = tempBaja;
           _tempMax = tempAlta;
@@ -175,6 +210,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
         });
                       
+        // WORKAROUND: Si el modo auto ya estaba activo y solo se modifican sus valores,
+        // lo desactivamos y reactivamos para forzar al ESP32 a re-evaluar los umbrales.
+        if (autoActivado && modoAutoEstabaActivo) {
+          _enviarComando("AUTO:0:$tempBaja:$tempAlta:$velAuto");
+        }
+
         // Enviamos el comando para activar/desactivar el modo automático en el ESP32.
         _enviarComando("AUTO:${autoActivado ? '1' : '0'}:$tempBaja:$tempAlta:$_velocidadAuto");
 
