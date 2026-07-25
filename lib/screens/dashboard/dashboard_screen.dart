@@ -89,48 +89,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _iniciarTemporizador(int minutos) {
     _timerCuentaRegresiva?.cancel();
 
+    // Envía el comando de tiempo al hardware.
+    // Si minutos es 0, el firmware lo interpreta como una cancelación.
+    _enviarComando("TIME:$minutos");
+
     if (minutos == 0) {
-      // CANCELACIÓN MANUAL: Solo borramos el tiempo visual, respetando la configuración actual
+      // Si se cancela, simplemente limpiamos el estado local.
       setState(() {
         _tiempoSeleccionado = '';
         _segundosRestantes = 0;
       });
-      _enviarComando("TIME:0");
       return;
     }
 
     // Si se inicia un temporizador, el modo auto se debe desactivar para evitar conflictos.
+    // Lo actualizamos localmente para reflejar el cambio de inmediato en la UI.
     if (_modoAuto) {
-      // Guardamos si los ventiladores estaban encendidos (según la temperatura)
-      // para poder mantener su estado después de cambiar de modo.
-      final bool ventiladoresEstabanEncendidos = _temperaturaActual >= _tempMax;
-      final int velocidadPrevia = _velocidadAuto;
-
       setState(() {
         _modoAuto = false;
-        // Actualizamos el estado local de las velocidades para la UI de "Gestionar Ventiladores".
-        if (ventiladoresEstabanEncendidos) {
-          _velocidadVentiladores = List.filled(5, velocidadPrevia.toDouble());
-        }
       });
-
-      // Enviamos el comando de tiempo. El firmware desactivará el modo auto
-      // y probablemente apagará los ventiladores como efecto secundario.
-      _enviarComando("TIME:$minutos");
-
-      // Para contrarrestar el apagado, si los ventiladores estaban encendidos,
-      // los volvemos a encender explícitamente a su velocidad anterior.
-      if (ventiladoresEstabanEncendidos) {
-        for (int i = 1; i <= 5; i++) {
-          _enviarComando("V$i:$velocidadPrevia");
-        }
-      }
-    } else {
-      // Si el modo auto no estaba activo, simplemente iniciamos el temporizador.
-      _enviarComando("TIME:$minutos");
     }
 
-    setState(() { _segundosRestantes = minutos * 60; });
+    // Iniciamos la cuenta regresiva para la UI.
+    setState(() {
+      _segundosRestantes = minutos * 60;
+    });
 
     _timerCuentaRegresiva = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_segundosRestantes > 0) {
@@ -142,13 +125,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
       } else {
         timer.cancel();
-        // Cuando el temporizador llega a 0, apagamos explícitamente los ventiladores
-        // para asegurar que se detengan, ya que el firmware podría no hacerlo
-        // si se enviaron comandos manuales después de iniciar el timer.
-        for (int i = 1; i <= 5; i++) {
-          _enviarComando("V$i:0");
-        }
-        setState(() { _tiempoSeleccionado = ''; _velocidadVentiladores = [0.0, 0.0, 0.0, 0.0, 0.0]; });
+        // Cuando el temporizador finaliza, el firmware ya debería haber apagado los ventiladores.
+        // Aquí solo limpiamos el estado de la UI para reflejarlo.
+        setState(() {
+          _tiempoSeleccionado = '';
+          _velocidadVentiladores = List.filled(5, 0.0);
+        });
       }
     });
   }
