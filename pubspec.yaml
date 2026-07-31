@@ -1,42 +1,62 @@
-name: app_ventiladores
-description: "A new Flutter project."
-publish_to: 'none' 
+# Archivo de configuración `pubspec.yaml`
+# Este archivo define la configuración de la aplicación, sus dependencias y metadatos.
+# Para más información, consulta la documentación oficial de Flutter:
+# https://flutter.dev/docs/development/tools/pubspec
 
+# 1. Información General del Proyecto
+# ---------------------------------
+name: app_ventiladores # Nombre del paquete de la aplicación.
+description: "A new Flutter project." # Descripción concisa del proyecto.
+publish_to: 'none' # Evita la publicación accidental en pub.dev, ya que es una aplicación privada.
+
+# Versión de la aplicación. El formato es <major>.<minor>.<patch>+<build_number>.
+# El `build_number` se incrementa automáticamente en cada compilación para facilitar el versionado.
 version: 1.0.0+1
 
+# 2. Configuración del Entorno
+# ----------------------------
 environment:
-  sdk: ^3.12.2
+  sdk: ^3.12.2 # Rango de versiones del SDK de Dart compatible con este proyecto.
 
+# 3. Dependencias de la Aplicación (Producción)
+# ------------------------------------------
+# Estas son las librerías necesarias para que la aplicación funcione en producción.
 dependencies:
   flutter:
-    sdk: flutter
-  cupertino_icons: ^1.0.8
+    sdk: flutter # Dependencia principal del framework Flutter.
+  cupertino_icons: ^1.0.8 # Conjunto de íconos de estilo iOS.
   
-  # Dependencias agregadas para base de datos y Bluetooth
-  sqflite: ^2.3.0
-  path_provider: ^2.1.1
-  flutter_blue_plus: ^1.31.0
-  permission_handler: ^11.3.0
+  # Dependencias agregadas para base de datos local y funcionalidades Bluetooth.
+  sqflite: ^2.3.0 # Plugin para integrar bases de datos SQLite.
+  path_provider: ^2.1.1 # Utilidad para encontrar rutas de directorios comunes en el sistema de archivos.
+  flutter_blue_plus: ^1.31.0 # Plugin para la comunicación Bluetooth Low Energy (BLE).
+  permission_handler: ^11.3.0 # Plugin para gestionar y solicitar permisos de sistema en iOS y Android.
 
+# 4. Dependencias de Desarrollo
+# -----------------------------
+# Estas librerías son solo para desarrollo y pruebas, no se incluyen en la versión final.
 dev_dependencies:
   flutter_test:
-    sdk: flutter
-  flutter_lints: ^6.0.0
+    sdk: flutter # Utilidades de Flutter para escribir tests.
+  flutter_lints: ^6.0.0 # Conjunto de reglas de linting para mantener la calidad del código.
   
-  # --- 1. LIBRERÍA PARA EL ÍCONO AGREGADA AQUÍ ---
+  # Herramienta para generar íconos de lanzamiento de la aplicación.
   flutter_launcher_icons: ^0.13.1
 
+# 5. Configuración Específica de Flutter
+# ------------------------------------
 flutter:
-  uses-material-design: true
+  uses-material-design: true # Habilita el uso de Material Design en la aplicación.
 
-  # --- 2. CARPETA ASSETS LIBERADA ---
-  # Al dejar solo "assets/", Flutter leerá cualquier imagen (logo, kiros y el ícono) 
-  # sin necesidad de escribir el nombre de cada una.
+  # Declaración de activos (assets) utilizados por la aplicación.
+  # Al especificar "assets/", se incluyen todos los archivos dentro de esa carpeta.
   assets:
     - assets/
 
-# --- 3. CONFIGURACIÓN DEL ÍCONO DE LA APP ---
+# 6. Configuración de Íconos de Lanzamiento
+# ---------------------------------------
+# Configuración específica para el plugin `flutter_launcher_icons`.
 flutter_launcher_icons:
-  android: true
-  ios: true
-  image_path: "assets/icono_app.png"
+  android: true # Generar íconos para Android.
+  ios: true # Generar íconos para iOS.
+  image_path: "assets/icono_app.png" # Ruta de la imagen fuente para el ícono de la aplicación.

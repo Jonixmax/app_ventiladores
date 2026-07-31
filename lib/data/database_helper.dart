@@ -57,7 +57,7 @@ class DatabaseHelper {
     return await db.query(table);
   }
 
-  // --- NUEVA FUNCIÓN PARA EDITAR ---
+  // ---  FUNCIÓN PARA EDITAR ---
   update(Map row) async {
     Database db = await instance.database;
     int id = row['id'];
